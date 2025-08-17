@@ -1,0 +1,34 @@
+version: '2'
+
+services:
+  core_server:
+    build: ./
+    volumes:
+     - ./package.json:/opt/package.json
+     - ./api:/opt/api/
+     - ./config:/opt/config/
+     - ./index.js:/opt/index.js
+    environment:
+     - VENUE_CONFIG=localhost:5151
+     - ARCHIVE=localhost:8010
+     - DATA_DIR=/Users/cfrancis/test/core/tests
+     - EXECUTION=localhost:9999
+    networks:
+      - core
+  apache:
+    container_name: apache_ing
+    image: httpd:2.4
+    volumes:
+      - "./configApache/server.key:/usr/local/apache2/conf/server.key:ro"
+      - "./configApache/server.crt:/usr/local/apache2/conf/server.crt:ro"
+      - "./configApache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro"
+      - "./configApache/httpd-ssl.conf:/usr/local/apache2/conf/extra/httpd-ssl.conf:ro"
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - core
+
+networks:
+  core:
+    driver: bridge

@@ -1,0 +1,11 @@
+<p><img src="/file_server/ingenium-media-prod-psyche/2019-03-14/c31f646f-3c5d-4b79-81c8-283ec1f9de4f/155 2580946903.png" style="width: 300px;" class="fr-fic fr-dib"></p>
+<p style="text-align: center;"><strong>Psyche Project</strong></p><p style="text-align: center;">P15854 Power Distribution Assembly (PDA) Electrical Integration Procedure</p>
+<p style="text-align: center;">Initial Release</p><p style="text-align: center;">Prepared by: Damian Magaña</p>
+<p style="text-align: center;"><br></p><p style="text-align: center;"><br></p>
+<p style="text-align: center;"><strong>THIS PROCEDURE DOES NOT CONTAIN HAZARDOUS OPERATIONS</strong></p><p><br></p><p><br></p>
+<p>Paper copies of this document may not be current and should not be relied on for official purposes. 
+The current version is in the PBAT Repository at the following URL: <a href="https://pbat.jpl.nasa.gov">https://pbat.jpl.nasa.gov</a></p><p><br></p><p><br></p><p><br></p><p>Date: February 26, 2021</p>
+<p>JPL P15854</p>
+<p><img data-fr-image-pasted="true" src="/file_server/ingenium-media-prod-psyche/2021-03-22/91bc2e26-efdc-4ac9-8b3d-40593f7f4631/1616454291618.png" style="box-sizing: border-box; border: 0px; max-width: 100%; height: auto; cursor: pointer; padding: 0px 1px; text-align: left; color: rgb(65, 65, 65); font-family: sans-serif; font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; width: 300px;" 
+class="fr-fil fr-dib">
+</p>
