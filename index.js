@@ -12,12 +12,11 @@ var config = require('./config');
 var node_funcs = require('./api/node_funcs');
 var _ = require('lodash');
 var winston = require('winston');
-var moment = require('moment');
 var util = require('util');
 var timeout = require('express-timeout-handler');
 var interceptor  = require('express-interceptor')
 const io = require('socket.io-client');
-const uuid = require('node-uuid');
+const { v4: uuidv4 } = require('uuid');
 
 // swaggerRouter configuration
 var options = {
@@ -125,7 +124,7 @@ app.use(interceptor(function (req, res) {
         }
   
         // send event message
-        let msg_id = uuid.v4();
+        let msg_id = uuidv4();
         let msg_time = new Date();
 
         let swagger_params = {};
@@ -247,7 +246,7 @@ app.use(interceptor(function (req, res) {
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
 var spec = fs.readFileSync('./api/swagger/swagger.yaml', 'utf8');//require('./api/swagger/swagger.json');
-var swaggerDoc = jsyaml.safeLoad(spec);
+var swaggerDoc = jsyaml.load(spec);
 // Initialize the Swagger middleware
 swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
   // Interpret Swagger resources and attach metadata to request - must be first in swagger-tools middleware chain

@@ -17,7 +17,7 @@ var targz = require("targz");
 var recursive_readdir = require("recursive-readdir");
 var archiveLocation = process.env.ARCHIVE ? process.env.ARCHIVE : 'http://localhost:8010/api/v5';
 var executionLocation = process.env.EXECUTION ? process.env.EXECUTION : 'http://localhost:9999/api/v4';
-var uuid = require('node-uuid');
+const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 var jwt = require('jsonwebtoken');
 var util = require('util');
@@ -35,7 +35,6 @@ const {authoring_field_map, execution_field_map, authoring_searchable_field_map,
   = require('./search_definitions');
 
 var public_pem = config.public_pem;
-var Q = require("q");
 var extend = require('extend');
 var util = require('util');
 var winston = require('winston');
@@ -792,7 +791,6 @@ var _get_execution_step = async function(execution_id, elem_id, key) {
 
 // TODO: use await
 var getVI_Status_Dict = async function(execution_id, key, procedure){
-  var deferred = Q.defer();
   var dictionary = {}
   var contTrue = true;
   var unknown = false
@@ -809,7 +807,7 @@ var getVI_Status_Dict = async function(execution_id, key, procedure){
       null, null, null, null, key)  
   }
 
-  return Q.all(elems.map(function(item) {
+  await Promise.all(elems.map(function(item) {
     status_id = item['elem_id']
     if(item.hasOwnProperty(vi_field)){
       if(item[vi_field].hasOwnProperty('steps')) {
@@ -822,7 +820,7 @@ var getVI_Status_Dict = async function(execution_id, key, procedure){
         vi_ids = vis.map(function(vi) {return vi['id']})
       }
     }
-    return Q.all(stepids.map(function(item) {
+    return Promise.all(stepids.map(function(item) {
       return _get_execution_step(execution_id, item, key)
       .then(function(body) {
         if(!body['executed']){
@@ -847,41 +845,31 @@ var getVI_Status_Dict = async function(execution_id, key, procedure){
     })
   }))
 
-  .then(() => {
-    deferred.resolve(dictionary)
-  })
-  return deferred.promise
+  return dictionary;
 }
 
 //authoring_user_input
 // TODO: use await
-var getProcedureVIs = function(procedure_id, filter, key) {
-  var deferred = Q.defer();
+var getProcedureVIs = async function(procedure_id, filter, key) {
   var dictionary = {}
-  getVI_Status_Dict(procedure_id, key, true)
-  .then(async function(dict) {
-    dictionary = dict;
-    let {elems, total_count} = await getProcedureElements(procedure_id, "STEP", "VERIFICATION_ITEM", 0, 10000, "ASC", null, key);
-    return elems;
-  })
-  .then((veritems) => {
-    veritems = veritems['data']
-    var resultArr = []
-    for(var i = 0; i < veritems.length; i++){
-      if(veritems[i].hasOwnProperty('authoring_user_input') && veritems[i]['authoring_user_input'].hasOwnProperty('vis')){
-        for(var j = 0; j < veritems[i]['authoring_user_input']['vis'].length; j++){
-          if(!dictionary.hasOwnProperty(veritems[i]['authoring_user_input']['vis'][j]['id']))
-            resultArr.push({"vi_id" : veritems[i]['authoring_user_input']['vis'][j]['id'], "vi_status_step_id" : "","status" : "UNKNOWN"})
-          else
-            resultArr.push(dictionary[veritems[i]['authoring_user_input']['vis'][j]['id']])
-        }
+  var dict = await getVI_Status_Dict(procedure_id, key, true);
+  dictionary = dict;
+  let {elems, total_count} = await getProcedureElements(procedure_id, "STEP", "VERIFICATION_ITEM", 0, 10000, "ASC", null, key);
+  var veritems = elems['data']
+  var resultArr = []
+  for(var i = 0; i < veritems.length; i++){
+    if(veritems[i].hasOwnProperty('authoring_user_input') && veritems[i]['authoring_user_input'].hasOwnProperty('vis')){
+      for(var j = 0; j < veritems[i]['authoring_user_input']['vis'].length; j++){
+        if(!dictionary.hasOwnProperty(veritems[i]['authoring_user_input']['vis'][j]['id']))
+          resultArr.push({"vi_id" : veritems[i]['authoring_user_input']['vis'][j]['id'], "vi_status_step_id" : "","status" : "UNKNOWN"})
+        else
+          resultArr.push(dictionary[veritems[i]['authoring_user_input']['vis'][j]['id']])
       }
     }
-    if(filter)
-      var resultArr = resultArr.filter(entry => entry['status'] == filter);
-    deferred.resolve(resultArr)
-  })
-  return deferred.promise
+  }
+  if(filter)
+    resultArr = resultArr.filter(entry => entry['status'] == filter);
+  return resultArr;
 }
 
 // TODO: use await
@@ -2202,7 +2190,7 @@ var object_exists = function (bucket, key) {
  */
 var upload_file = async function (bucket, filename, buffer) {
   let prefix = (new Date()).toISOString().split('T')[0];
-  let foldername = uuid.v4();
+  let foldername = uuidv4();
   let objectKey = path.join(prefix, foldername, filename);    
   let fileUrl = path.join(config.MEDIA_BUCKET, prefix, foldername, filename);
     
@@ -4574,37 +4562,40 @@ function updateLogging(logging_info) {
 }
 
 function findLevel(as_run, elem_id) {
-  var deferred = Q.defer();
-  for(let i = 0; i < as_run.length; i++){
-    if(as_run[i]['elem_id'] == elem_id){
-
-      deferred.resolve(as_run);
+  return new Promise(function(resolve) {
+    for(let i = 0; i < as_run.length; i++){
+      if(as_run[i]['elem_id'] == elem_id){
+        resolve(as_run);
+        return;
+      }
+      else if(as_run[i]['children'] && as_run[i]['children'].length > 0){
+        findLevel(as_run[i]['children'], elem_id)
+        .then((results) => {
+          resolve(results);
+        })
+        return;
+      }
     }
-    else if(as_run[i]['children'] && as_run[i]['children'].length > 0){
-      findLevel(as_run[i]['children'], elem_id)
-      .then((results) => {
-        return results
-      })
-    }
-  }
-  return deferred.promise;
+  });
 }
 //Recurse function
 // TODO: why do we use promise here?
 function NumerTOC(section, elem_id, toc) {
-  var deferred = Q.defer();
-  for(let i = 0; i < section.length; i++){
-    if(section[i]['elem_type'] == "PARAGRAPH")
-      continue
-    else if (section[i]['children'] && section[i]['children'].length > 0) {
-      toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
-      NumerTOC(section[i]['children'], elem_id, toc).then((res) => deferred.resolve(res))
-    } else {
-      toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
-      deferred.resolve(toc);
+  return new Promise(function(resolve) {
+    for(let i = 0; i < section.length; i++){
+      if(section[i]['elem_type'] == "PARAGRAPH")
+        continue
+      else if (section[i]['children'] && section[i]['children'].length > 0) {
+        toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
+        NumerTOC(section[i]['children'], elem_id, toc).then((res) => resolve(res))
+        return;
+      } else {
+        toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
+        resolve(toc);
+        return;
+      }
     }
-  }
-  return deferred.promise;
+  });
 }
 
 function executeTOC(step, key, as_run){
