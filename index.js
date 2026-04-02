@@ -52,7 +52,7 @@ app.use(bodyParser.urlencoded({limit: "5mb", extended: true, parameterLimit:5000
 log.debug(`connecting to execution monitor: ${config.EXECUTION_MONITOR_URL}`);
 
 const socket = io(config.EXECUTION_MONITOR_URL, {
-  transport: ['websocket'],
+  transports: ['websocket'],
   autoConnect: false,
   query: {secret: ems_secret}
 });
@@ -69,11 +69,11 @@ socket.on('disconnect', function(reason) {
     log.debug(`Disconnected to Execution Monitor. reason: ${reason}`);
 });
 
-socket.on('reconnect_attempt', function(attemptNumber) {
+socket.io.on('reconnect_attempt', function(attemptNumber) {
     log.debug(`reconnect_attempt to Execution Monitor. attemptNumber: ${attemptNumber}`);
 });  
 
-socket.on('reconnect', function(attemptNumber) {
+socket.io.on('reconnect', function(attemptNumber) {
     log.debug(`reconnected to Execution Monitor. attemptNumber: ${attemptNumber}`);
 });    
 
