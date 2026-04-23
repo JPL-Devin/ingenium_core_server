@@ -4562,53 +4562,38 @@ function updateLogging(logging_info) {
 }
 
 function findLevel(as_run, elem_id) {
-  return new Promise(function(resolve) {
-    for(let i = 0; i < as_run.length; i++){
-      if(as_run[i]['elem_id'] == elem_id){
-        resolve(as_run);
-        return;
-      }
-      else if(as_run[i]['children'] && as_run[i]['children'].length > 0){
-        findLevel(as_run[i]['children'], elem_id)
-        .then((results) => {
-          resolve(results);
-        })
-        return;
+  for (let i = 0; i < as_run.length; i++) {
+    if (as_run[i]['elem_id'] == elem_id) {
+      return as_run;
+    }
+    if (as_run[i]['children'] && as_run[i]['children'].length > 0) {
+      const result = findLevel(as_run[i]['children'], elem_id);
+      if (result) {
+        return result;
       }
     }
-  });
+  }
+  return null;
 }
-//Recurse function
-// TODO: why do we use promise here?
-function NumerTOC(section, elem_id, toc) {
-  return new Promise(function(resolve) {
-    for(let i = 0; i < section.length; i++){
-      if(section[i]['elem_type'] == "PARAGRAPH")
-        continue
-      else if (section[i]['children'] && section[i]['children'].length > 0) {
-        toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
-        NumerTOC(section[i]['children'], elem_id, toc).then((res) => resolve(res))
-        return;
-      } else {
-        toc.push({"number" : section[i]['number'], "title" : section[i]['title']})
-        resolve(toc);
-        return;
-      }
+function NumerTOC(section, toc) {
+  for (let i = 0; i < section.length; i++) {
+    if (section[i]['elem_type'] === 'PARAGRAPH') {
+      continue;
     }
-  });
+    toc.push({"number": section[i]['number'], "title": section[i]['title']});
+    if (section[i]['children'] && section[i]['children'].length > 0) {
+      NumerTOC(section[i]['children'], toc);
+    }
+  }
+  return toc;
 }
 
 function executeTOC(step, key, as_run){
-  log.trace(`executeTOC step: ${JSON.stringify(as_run)}`)
-  return findLevel(as_run['children'], step['elem_id'])
-  .then((results) => {
-    return NumerTOC(results, step['elem_id'], [])
-  })
-  .then((item) => {
-    step['execution']['results']['entries'] = item
-    // update only execution
-    return updateExecutionStep(step['execution_id'], step['elem_id'], {'execution': step['execution']}, false, key)
-  })
+  log.trace(`executeTOC step: ${JSON.stringify(as_run)}`);
+  const results = findLevel(as_run['children'], step['elem_id']);
+  const item = NumerTOC(results || [], []);
+  step['execution']['results']['entries'] = item;
+  return updateExecutionStep(step['execution_id'], step['elem_id'], {'execution': step['execution']}, false, key);
 }
 
 function executeAnalysis(step, key) {
@@ -5941,6 +5926,8 @@ module.exports.remove_break_points = remove_break_points
 
 module.exports.compute_execution_element = compute_execution_element
 module.exports.compute_procedure_element = compute_procedure_element
+module.exports.findLevel = findLevel
+module.exports.NumerTOC = NumerTOC
 module.exports.is_string = is_string
 module.exports.to_obj_string = to_obj_string
 
