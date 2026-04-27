@@ -12,12 +12,11 @@ var config = require('./config');
 var node_funcs = require('./api/node_funcs');
 var _ = require('lodash');
 var winston = require('winston');
-var moment = require('moment');
 var util = require('util');
 var timeout = require('express-timeout-handler');
 var interceptor  = require('express-interceptor')
 const io = require('socket.io-client');
-const uuid = require('node-uuid');
+const { v4: uuidv4 } = require('uuid');
 
 // swaggerRouter configuration
 var options = {
@@ -53,7 +52,7 @@ app.use(bodyParser.urlencoded({limit: "5mb", extended: true, parameterLimit:5000
 log.debug(`connecting to execution monitor: ${config.EXECUTION_MONITOR_URL}`);
 
 const socket = io(config.EXECUTION_MONITOR_URL, {
-  transport: ['websocket'],
+  transports: ['websocket'],
   autoConnect: false,
   query: {secret: ems_secret}
 });
@@ -70,11 +69,11 @@ socket.on('disconnect', function(reason) {
     log.debug(`Disconnected to Execution Monitor. reason: ${reason}`);
 });
 
-socket.on('reconnect_attempt', function(attemptNumber) {
+socket.io.on('reconnect_attempt', function(attemptNumber) {
     log.debug(`reconnect_attempt to Execution Monitor. attemptNumber: ${attemptNumber}`);
 });  
 
-socket.on('reconnect', function(attemptNumber) {
+socket.io.on('reconnect', function(attemptNumber) {
     log.debug(`reconnected to Execution Monitor. attemptNumber: ${attemptNumber}`);
 });    
 
@@ -125,7 +124,7 @@ app.use(interceptor(function (req, res) {
         }
   
         // send event message
-        let msg_id = uuid.v4();
+        let msg_id = uuidv4();
         let msg_time = new Date();
 
         let swagger_params = {};
@@ -247,7 +246,7 @@ app.use(interceptor(function (req, res) {
 
 // The Swagger document (require it, build it programmatically, fetch it from a URL, ...)
 var spec = fs.readFileSync('./api/swagger/swagger.yaml', 'utf8');//require('./api/swagger/swagger.json');
-var swaggerDoc = jsyaml.safeLoad(spec);
+var swaggerDoc = jsyaml.load(spec);
 // Initialize the Swagger middleware
 swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
   // Interpret Swagger resources and attach metadata to request - must be first in swagger-tools middleware chain
